@@ -10,8 +10,7 @@ def random_string(length):
 class TestSignature(unittest.TestCase):
         
     def test_signature(self):
-        keys = gen_keys(128)
-        print(keys)
+        keys = gen_keys(256)
         for i in range(100):
             l = random.getrandbits(10)
             m = random_string(l)

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from .signature import create_signature, is_valid_signature
 
 DIFFICULTY = 1 << 245
 COINBASE_CONSTANT = "__COINBASE__"
@@ -11,10 +12,16 @@ def tx_output(out_addr, amt):
     return (out_addr, amt)
 
 class Tx:
-    def __init__(self, from_addr, inputs, outputs):
+    def __init__(self, from_addr, signature, inputs, outputs):
         self.from_addr = from_addr
+        self.signature = signature
         self.inputs = inputs
         self.outputs = outputs
+
+    @classmethod
+    def build_with_signature(cls, pubkey, privkey, inputs, outputs):
+        sig = create_signature((inputs, outputs), privkey)
+        return Tx(pubkey, sig, inputs, outputs)
 
     @classmethod
     def coinbase(cls, out_addr):
@@ -31,6 +38,10 @@ class Tx:
     
     def total_output(self):
         return sum(x[1] for x in self.outputs)
+
+    def validate(self):
+        if not is_valid_signature((self.inputs, self.outputs), self.signature, self.from_addr):
+            raise InvalidTransactionException("Invalid signature")
     
     def __repr__(self):
         return "Tx<{}>[{} {} {}]".format(fmt_h(hash_(self)), self.from_addr, self.inputs, self.outputs)
@@ -138,6 +149,7 @@ class BlockChain:
             self.validate_transaction(tx)
     
     def validate_transaction(self, tx):
+        tx.validate()
         if not all(inp in self.valid_inputs[tx.from_addr] for inp in tx.inputs):
             raise InvalidTransactionException("Transaction includes invalid/double-spend inputs".format(tx))
         if sum(self.output_size(*i) for i in tx.inputs) < tx.total_output():
