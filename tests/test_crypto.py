@@ -1,5 +1,5 @@
 import unittest
-from jocoin.crypto import gen_keys, likely_prime, generate_prime, encrypt, decrypt
+from jocoin.crypto import sieve, gen_keys, likely_prime, generate_prime, encrypt, decrypt
 import random
 
 def validate_prime(p):
@@ -44,5 +44,6 @@ class TestCrypto(unittest.TestCase):
     def test_likely_prime(self):
         self.assertFalse(likely_prime(221))
 
-    def test_key_gen(self):
-        pass
+    def test_sieve(self):
+        primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97]
+        self.assertTrue(primes == sieve(100))

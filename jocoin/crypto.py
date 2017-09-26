@@ -2,9 +2,9 @@ import random
 
 
 def extended_euclidean_alg(a, b):
-    return extended_euclidean_alg_r(a, b, 1, 0, 0, 1)
-
-def extended_euclidean_alg_r(r0, r1, s0, s1, t0, t1):
+    r0, r1 = a, b
+    s0, s1 = 1, 0
+    t0, t1 = 0, 1
     while True:
         r = r0 % r1
         if r == 0:
@@ -23,9 +23,23 @@ def mod_mult_inv(a, m):
 def lcm(a, b):
     return a * (b // gcd(a, b))
 
+def sieve(n):
+    primes = [2]
+    candidates = list(range(3, n, 2))
+    while True:
+        p = candidates.pop(0)
+        if p > (n ** (1/2)):
+            primes.append(p)
+            break
+        candidates = [c for c in candidates if c % p != 0]
+        primes.append(p)
+    return primes + candidates
+        
+PRIMES = sieve(100000)
+
 def find_coprime(t):
-    # Todo: find random coprime
-    for p in [17, 23, 29]:
+    random.shuffle(PRIMES)
+    for p in PRIMES:
         if t % p != 0:
             return p
     raise ValueError("No p!")
