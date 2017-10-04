@@ -1,16 +1,45 @@
-from .chain import DIFFICULTY, BlockChain, InvalidTransactionException
+import random
+from .chain import DIFFICULTY, BlockChain, BlockStruct, InvalidTransactionException, Tx
+from .serialization import serialize
+from .hashing import hash_
 
 
-class Miner:
-    def __init__(self):
-        self.current_txs = []
-        self.chain = BlockChain()
+class Client:
+    def __init__(self, network, peers):
+        self.network = network
+        if peers:
+            self.peers = peers
+            self.initiate_connection()
+        else:
+            self.peers = []
+            self.current_txs = []
+            self.chain = BlockChain.empty()
         
+    def random_peer(self):
+        if self.peers:
+            return random.choice(self.peers)
+
+    def initiate_connection(self):
+        while True:
+            try:
+                peer = self.random_peer()
+                other = self.network.request_history(peer)
+                print("Initializing with ", other)
+                self.peers = list(set().union(self.peers, other["peers"]))
+                self.chain = BlockChain(**other["chain"])
+                self.current_txs = other["txs"]
+                break
+            except ConnectionError as e:
+                print("Error connecting to peer {}: {}").format(peer, e)
+                time.sleep(1)
+
+    def get_all_state(self):
+        return {"peers": self.peers, "txs": self.current_txs, "chain": self.chain.serializable()}
+
     def add_tx(self, tx):
         # Add transaction to list of candidates
         try:
             self.chain.validate_tx(tx)
-            self.validate_tx(tx)
             self.current_txs.append(tx)
             return True
         except InvalidTransactionException as e:

@@ -1,5 +1,7 @@
 from collections import defaultdict
 from .signature import create_signature, is_valid_signature
+from .hashing import hash_
+from .serialization import fmt_h
 
 DIFFICULTY = 1 << 245
 COINBASE_CONSTANT = "__COINBASE__"
@@ -25,7 +27,7 @@ class Tx:
 
     @classmethod
     def coinbase(cls, out_addr):
-        return cls(COINBASE_CONSTANT, [], [tx_output(out_addr, COINBASE_AMT)])
+        return cls(COINBASE_CONSTANT, None, [], [tx_output(out_addr, COINBASE_AMT)])
     
     def amt_out(self):
         return sum(x[1] for x in self.outputs)
@@ -73,7 +75,6 @@ class BlockChain:
     def __init__(self, current_hash, blocks):
         self.current_hash = current_hash
         self.blocks = blocks
-        self.init_blocks()
         self.valid_inputs = self.find_inputs()
 
     @classmethod
@@ -82,6 +83,9 @@ class BlockChain:
         current_hash = hash_(gen)
         blocks = {current_hash: gen}
         return cls(current_hash, blocks)
+
+    def serializable(self):
+        return {"blocks": self.blocks, "current_hash": self.current_hash}
     
     def block_iter(self):
         h = self.current_hash
@@ -103,7 +107,6 @@ class BlockChain:
                         valid_inputs[addr].append(output_id)
                 for out_h, out_idx, out_out_idx in tx.inputs:
                     inputs.add((out_h, out_idx, out_out_idx))
-        print(valid_inputs)
         return valid_inputs
     
     def output_size(self, block_hash, tx_index, output_index):
