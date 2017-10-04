@@ -70,14 +70,18 @@ class BlockStruct:
         return "Block<{}>[{}]".format(fmt_h(hash_(self)), self.txs)
 
 class BlockChain:
-    def __init__(self):
+    def __init__(self, current_hash, blocks):
+        self.current_hash = current_hash
+        self.blocks = blocks
         self.init_blocks()
         self.valid_inputs = self.find_inputs()
 
-    def init_blocks(self):
+    @classmethod
+    def empty(cls):
         gen = BlockStruct.genesis()
-        self.current_hash = hash_(gen)
-        self.blocks = {self.current_hash: gen}
+        current_hash = hash_(gen)
+        blocks = {current_hash: gen}
+        return cls(current_hash, blocks)
     
     def block_iter(self):
         h = self.current_hash
@@ -107,7 +111,9 @@ class BlockChain:
     
     def holdings(self):
         return {user: sum(self.output_size(*x) for x in self.valid_inputs[user]) for user in self.valid_inputs}
-            
+
+    def valid_inputs_for(self, pubkey):
+        return [(i, self.output_size(*i)) for i in self.valid_inputs[pubkey]]
                 
     def last_block(self):
         return self.blocks[self.current_hash]

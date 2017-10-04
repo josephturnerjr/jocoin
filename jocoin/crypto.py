@@ -88,7 +88,6 @@ def gen_keys(length):
     totient = lcm(p-1, q-1)
     e = find_coprime(totient)
     d = mod_mult_inv(e, totient)
-    #print("p, q, totient, e, d", p, q, totient, e, d, e * d % totient)
     return {"pubkey": (n, e), "privkey": (n, d)}
 
 def encrypt(m, privkey):

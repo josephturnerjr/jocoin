@@ -10,6 +10,7 @@ class Miner:
         # Add transaction to list of candidates
         try:
             self.chain.validate_tx(tx)
+            self.validate_tx(tx)
             self.current_txs.append(tx)
             return True
         except InvalidTransactionException as e:
@@ -43,3 +44,19 @@ class Miner:
     
     def add_block(self, blk):
         return self.chain.add_block(blk)
+
+    def make_tx_for(self, privkey, pubkey, outputs):
+        all_inputs = self.chain.get_valid_inputs_for(pubkey)
+        out_total = sum(x[1] for x in outputs)
+        in_available = sum(x[1] for x in all_inputs)
+        if out_total > in_available:
+            raise InvalidTransactionException("Requested amount is larger than available funds")
+        sum = 0.0
+        inputs = []
+        for i, amt in all_inputs:
+            if sum < out_total:
+                inputs.append(i)
+                sum += amt
+            else:
+                break
+        return Tx.build_with_signature(pubkey, privkey, inputs, outputs)
