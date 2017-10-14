@@ -71,10 +71,24 @@ class BlockStruct:
     def __repr__(self):
         return "Block<{}>[{}]".format(fmt_h(hash_(self)), self.txs)
 
+    def __eq__(self, other):
+        return self.last_hash == other.last_hash and self.txs == other.txs and self.nonce == other.nonce
+
+
 class BlockChain:
     def __init__(self, current_hash, blocks):
-        self.current_hash = current_hash
-        self.blocks = blocks
+        ordered = list(self.block_iter_(current_hash, blocks))
+        ordered.reverse()
+        gen = BlockStruct.genesis()
+        gen_hash = hash_(gen)
+        if gen_hash in blocks and blocks[gen_hash] == gen:
+            self.current_hash = gen_hash
+            self.blocks = {gen_hash: gen}
+            for block in ordered[1:]:
+                self.add_block(block)
+        else:
+            print(gen_hash in blocks, blocks[gen_hash], gen)
+            raise ValueError("Seed blocks do not contain the Genesis block")
         self.valid_inputs = self.find_inputs()
 
     @classmethod
@@ -84,16 +98,23 @@ class BlockChain:
         blocks = {current_hash: gen}
         return cls(current_hash, blocks)
 
+    def length(self):
+        return len(list(self.block_iter()))
+
     def serializable(self):
         return {"blocks": self.blocks, "current_hash": self.current_hash}
     
     def block_iter(self):
-        h = self.current_hash
+        return self.block_iter_(self.current_hash, self.blocks)
+
+    @staticmethod
+    def block_iter_(last_hash, blocks):
+        h = last_hash
         while h is not None:
-            b = self.blocks[h]
+            b = blocks[h]
             yield b
             h = b.last_hash
-    
+        
     def find_inputs(self):
         valid_inputs = defaultdict(list)
         inputs = set()
@@ -123,7 +144,7 @@ class BlockChain:
             
     def validate_block(self, block):
         # Doesn't handle missed blocks (yet)
-        if block.last_hash != hash_(self.last_block()):
+        if block.last_hash != self.current_hash:
             raise InvalidBlockException("Last hash does not match last block in chain")
         # Validate nonce
         if not hash_(block) < DIFFICULTY:

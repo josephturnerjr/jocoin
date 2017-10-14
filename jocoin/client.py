@@ -7,34 +7,86 @@ from .hashing import hash_
 class Client:
     def __init__(self, network, peers):
         self.network = network
+        self.current_txs = []
         if peers:
             self.peers = peers
-            self.initiate_connection()
+            self.chain = None
+            self.get_initial_state()
         else:
             self.peers = []
-            self.current_txs = []
             self.chain = BlockChain.empty()
         
     def random_peer(self):
         if self.peers:
             return random.choice(self.peers)
 
-    def initiate_connection(self):
+    def get_initial_state(self):
         while True:
             try:
                 peer = self.random_peer()
-                other = self.network.request_history(peer)
-                print("Initializing with ", other)
-                self.peers = list(set().union(self.peers, other["peers"]))
-                self.chain = BlockChain(**other["chain"])
-                self.current_txs = other["txs"]
-                break
+                other = self.network.swap_history(peer, None)
+                if other:
+                    self.merge_history(other)
+                    break
+                else:
+                    continue
             except ConnectionError as e:
                 print("Error connecting to peer {}: {}").format(peer, e)
-                time.sleep(1)
+            except Exception as e:
+                print("Error merging peer history for peer {}: {}").format(peer, e)
+            time.sleep(1)
+
+    def broadcast(self):
+        # For newly-found blocks, blast to all known peers
+        for peer in self.peers:
+            gossip_with_peer(peer)
+
+    def gossip(self):
+        peer = self.random_peer()
+        if peer is not None:
+            return self.gossip_with_peer(peer, self.get_all_state())
+
+    def gossip_with_peer(self, peer, history):
+        other = self.network.swap_history(peer, history)
+        print("Gossiping with {} [{}] (sent {}, recieved {})".format(peer, self.peers, history, other))
+        self.handle_peer_data(other)
+
+    def handle_peer_data(self, data):
+        if data:
+            self.merge_history(data)
+
+    def merge_history(self, other):
+        self.merge_peers(other["peers"])
+        self.merge_chain(BlockChain(**other["chain"]))
+        # Tx merge must happen after blockchain merge so that txs can be pruned
+        self.merge_txs(other["txs"])
+
+    def merge_peers(self, other_peers):
+        self.peers = list(set().union(self.peers, other_peers))
+
+    def merge_txs(self, other_txs):
+        # Merge transaction lists
+        current_txs = list(set().union(self.current_txs, other_txs))
+        # Prune spent and invalid transactions
+        self.current_txs = []
+        for tx in current_txs:
+            self.add_tx(tx)
+
+    def merge_chain(self, other_chain):
+        if self.chain is None:
+            self.chain = other_chain
+        else:
+            # Lots of ways to optimize this
+            # Basically here we're just taking the longest of the two (valid) chains
+            if other_chain.length() > self.chain.length():
+                self.chain = other_chain
 
     def get_all_state(self):
-        return {"peers": self.peers, "txs": self.current_txs, "chain": self.chain.serializable()}
+        return {
+            "peers": self.peers,
+            "txs": self.current_txs,
+            "chain": self.chain.serializable()
+        }
 
     def add_tx(self, tx):
         # Add transaction to list of candidates
