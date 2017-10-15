@@ -1,12 +1,11 @@
 import unittest
 
-from jocoin.chain import Tx, tx_input, tx_output, InvalidTransactionException
-from jocoin.signature import create_signature
-from jocoin.crypto import gen_keys
+from jocoin.tx import Tx, tx_input, tx_output, InvalidTransactionException
+import jocoin.crypto as jc
 
 class TestTx(unittest.TestCase):
     def setUp(self):
-        keys = gen_keys(256)
+        keys = jc.gen_keys(256)
         self.pubkey = keys["pubkey"]
         self.privkey = keys["privkey"]
         self.inputs = [tx_input(1, 0, 0)]
