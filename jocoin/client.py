@@ -5,7 +5,9 @@ from .hashing import hash_
 
 
 class Client:
-    def __init__(self, network, peers):
+    def __init__(self, pubkey, privkey, network, peers):
+        self.pubkey = pubkey
+        self.privkey = privkey
         self.network = network
         self.current_txs = []
         if peers:
@@ -39,7 +41,7 @@ class Client:
     def broadcast(self):
         # For newly-found blocks, blast to all known peers
         for peer in self.peers:
-            gossip_with_peer(peer)
+            self.gossip_with_peer(peer, self.get_all_state())
 
     def gossip(self):
         peer = self.random_peer()
@@ -48,7 +50,6 @@ class Client:
 
     def gossip_with_peer(self, peer, history):
         other = self.network.swap_history(peer, history)
-        print("Gossiping with {} [{}] (sent {}, recieved {})".format(peer, self.peers, history, other))
         self.handle_peer_data(other)
 
     def handle_peer_data(self, data):
@@ -57,9 +58,9 @@ class Client:
 
     def merge_history(self, other):
         self.merge_peers(other["peers"])
-        self.merge_chain(BlockChain(**other["chain"]))
+        self.merge_chain(BlockChain.from_json(other["chain"]))
         # Tx merge must happen after blockchain merge so that txs can be pruned
-        self.merge_txs(other["txs"])
+        self.merge_txs([Tx.from_json(tx) for tx in other["txs"]])
 
     def merge_peers(self, other_peers):
         self.peers = list(set().union(self.peers, other_peers))
@@ -84,8 +85,8 @@ class Client:
     def get_all_state(self):
         return {
             "peers": self.peers,
-            "txs": self.current_txs,
-            "chain": self.chain.serializable()
+            "txs": [tx.as_json() for tx in self.current_txs],
+            "chain": self.chain.as_json()
         }
 
     def add_tx(self, tx):
@@ -100,7 +101,7 @@ class Client:
     
     def emit_txs(self):
         # Export transaction candidates with coinbase for block mining
-        self.add_tx(Tx.coinbase("ME"))
+        self.add_tx(Tx.coinbase(self.pubkey))
         txs = self.current_txs
         self.current_txs = []
         return txs
@@ -127,17 +128,17 @@ class Client:
         return self.chain.add_block(blk)
 
     def make_tx_for(self, privkey, pubkey, outputs):
-        all_inputs = self.chain.get_valid_inputs_for(pubkey)
+        all_inputs = self.chain.valid_inputs_for(pubkey)
         out_total = sum(x[1] for x in outputs)
         in_available = sum(x[1] for x in all_inputs)
         if out_total > in_available:
             raise InvalidTransactionException("Requested amount is larger than available funds")
-        sum = 0.0
+        sum_total = 0.0
         inputs = []
         for i, amt in all_inputs:
-            if sum < out_total:
+            if sum_total < out_total:
                 inputs.append(i)
-                sum += amt
+                sum_total += amt
             else:
                 break
         return Tx.build_with_signature(pubkey, privkey, inputs, outputs)

@@ -81,7 +81,7 @@ def generate_prime(length):
             if likely_prime(candidate):
                 return candidate
 
-def gen_keys(length):
+def gen_keys(length=512):
     p = generate_prime(length)
     q = generate_prime(length)
     n = p * q
