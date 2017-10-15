@@ -1,4 +1,4 @@
-import random
+from .serialization import serialize, deserialize
 
 
 class Connection:
@@ -14,7 +14,9 @@ class Connection:
 
     def read(self):
         if self.status == Network.SWAP:
-            return self.state.get_all_state()
+            state = self.state.get_all_state()
+            print("SENDING", state, deserialize(serialize(state)))
+            return deserialize(serialize(state))
     
 
 class Network:
@@ -28,5 +30,6 @@ class Network:
 
     def swap_history(self, peer_id, history):
         connection = self.connect(peer_id)
-        connection.send(self.SWAP, history)
+        print("SWAPPING", deserialize(serialize(history)))
+        connection.send(self.SWAP, deserialize(serialize(history)))
         return connection.read()

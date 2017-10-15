@@ -4,14 +4,14 @@ from .hashing import hash_
 from .serialization import fmt_h
 
 DIFFICULTY = 1 << 245
-COINBASE_CONSTANT = "__COINBASE__"
+COINBASE_CONSTANT = ("__COINBASE__", 0)
 COINBASE_AMT = 10.0
 
 def tx_input(tx_out_hash, tx_index, tx_out_index):
     return (tx_out_hash, tx_index, tx_out_index)
 
 def tx_output(out_addr, amt):
-    return (out_addr, amt)
+    return (tuple(out_addr), amt)
 
 class Tx:
     def __init__(self, from_addr, signature, inputs, outputs):
@@ -39,10 +39,18 @@ class Tx:
         return sum(x[1] for x in self.outputs)
     
     def as_json(self):
-        return {"from_addr": self.from_addr, "signature": self.signature, "inputs": self.inputs, "outputs": self.outputs}
+        return {
+            "from_addr": self.from_addr,
+            "signature": self.signature,
+            "inputs": self.inputs,
+            "outputs": self.outputs
+        }
 
     @classmethod
     def from_json(cls, data):
+        data["from_addr"] = tuple(data["from_addr"])
+        data["inputs"] = [tx_input(*i) for i in data["inputs"]]
+        data["outputs"] = [tx_output(*o) for o in data["outputs"]]
         return cls(**data)
     
     def is_coinbase(self):
@@ -72,10 +80,16 @@ class BlockStruct:
         self.nonce = nonce
     
     def as_json(self):
-        return {"id": self.id, "txs": self.txs, "nonce": self.nonce, "last_hash": self.last_hash}
+        return {
+            "id": self.id,
+            "txs": self.txs,
+            "nonce": self.nonce,
+            "last_hash": self.last_hash
+        }
 
     @classmethod
     def from_json(cls, data):
+        data["txs"] = [Tx.from_json(tx) for tx in data["txs"]]
         return cls(**data)
     
     @classmethod
@@ -123,7 +137,8 @@ class BlockChain:
 
     @classmethod
     def from_json(cls, data):
-        data["blocks"] = {b: BlockStruct.from_json(data["blocks"][b]) for b in data["blocks"]}
+        data["blocks"] = {int(b): BlockStruct.from_json(data["blocks"][b]) for b in data["blocks"]}
+        print(data)
         return cls(**data)
     
     def block_iter(self):
@@ -143,10 +158,11 @@ class BlockChain:
         for block in self.block_iter():
             block_hash = hash_(block)
             for tx_index, tx in enumerate(block.txs):
+                print(tx)
                 # An output is a valid input unless it's been consumed by another transaction
                 for output_index, (addr, amt) in enumerate(tx.outputs):
                     output_id = (block_hash, tx_index, output_index)
-                    if (output_id) not in inputs:
+                    if output_id not in inputs:
                         valid_inputs[addr].append(output_id)
                 for out_h, out_idx, out_out_idx in tx.inputs:
                     inputs.add((out_h, out_idx, out_out_idx))
