@@ -1,7 +1,7 @@
 from collections import defaultdict
 from .hashing import hash_
 from .serialization import fmt_h
-from .tx import Tx, InvalidTransactionException, COINBASE_AMT
+from .tx import Tx, TxInput, InvalidTransactionException, COINBASE_AMT
 from .blockstruct import BlockStruct
 
 DIFFICULTY = 1 << 245
@@ -21,7 +21,6 @@ class BlockChain:
             for block in ordered[1:]:
                 self.add_block(block)
         else:
-            print(gen_hash in blocks, blocks[gen_hash], gen)
             raise ValueError("Seed blocks do not contain the Genesis block")
         self.valid_inputs = self.find_inputs()
 
@@ -44,7 +43,6 @@ class BlockChain:
     @classmethod
     def from_json(cls, data):
         data["blocks"] = {int(b): BlockStruct.from_json(data["blocks"][b]) for b in data["blocks"]}
-        print(data)
         return cls(**data)
     
     def block_iter(self):
@@ -64,7 +62,6 @@ class BlockChain:
         for block in self.block_iter():
             block_hash = hash_(block)
             for tx_index, tx in enumerate(block.txs):
-                print(tx)
                 # An output is a valid input unless it's been consumed by another transaction
                 for output_index, (addr, amt) in enumerate(tx.outputs):
                     output_id = (block_hash, tx_index, output_index)
@@ -72,16 +69,16 @@ class BlockChain:
                         valid_inputs[addr].append(output_id)
                 for out_h, out_idx, out_out_idx in tx.inputs:
                     inputs.add((out_h, out_idx, out_out_idx))
-        return valid_inputs
+        return {x: [TxInput(*i) for i in valid_inputs[x]] for x in valid_inputs}
     
-    def output_size(self, block_hash, tx_index, output_index):
-        return self.blocks[block_hash].txs[tx_index].outputs[output_index][1]
+    def output_size(self, tx):#block_hash, tx_index, output_index):
+        return self.blocks[tx.block_hash].txs[tx.tx_index].outputs[tx.tx_out_index][1]
     
     def holdings(self):
-        return {user: sum(self.output_size(*x) for x in self.valid_inputs[user]) for user in self.valid_inputs}
+        return {user: sum(self.output_size(x) for x in self.valid_inputs[user]) for user in self.valid_inputs}
 
     def valid_inputs_for(self, pubkey):
-        return [(i, self.output_size(*i)) for i in self.valid_inputs[pubkey]]
+        return [(i, self.output_size(i)) for i in self.valid_inputs[pubkey]]
                 
     def last_block(self):
         return self.blocks[self.current_hash]
@@ -126,7 +123,7 @@ class BlockChain:
         tx.validate()
         if not all(inp in self.valid_inputs[tx.from_addr] for inp in tx.inputs):
             raise InvalidTransactionException("Transaction includes invalid/double-spend inputs".format(tx))
-        if sum(self.output_size(*i) for i in tx.inputs) < tx.total_output():
+        if sum(self.output_size(i) for i in tx.inputs) < tx.total_output():
             raise InvalidTransactionException("Transaction outputs are more than inputs")
             
     def __repr__(self):

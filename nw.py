@@ -21,31 +21,32 @@ if __name__ == "__main__":
     clients.append(c2)
 
     for i, c in enumerate(clients):
-        print(i, c.get_all_state())
+        pass#print(i, c.get_all_state())
 
     for x in range(10):
         for c in clients:
             c.gossip()
 
     for i, c in enumerate(clients):
-        print(i, c.get_all_state())
+        pass#print(i, c.get_all_state())
 
     tx = c0.make_tx_for(c1.privkey, c1.pubkey, [(c2.pubkey, 1.0)])
     c0.add_tx(tx)
 
     for i, c in enumerate(clients):
-        print(i, c.get_all_state())
+        pass#print(i, c.get_all_state())
     for x in range(10):
         for c in clients:
             c.gossip()
 
     for i, c in enumerate(clients):
-        print(i, c.get_all_state())
+        pass#print(i, c.get_all_state())
 
     b = c2.mine()
     c2.add_block(b)
     c2.broadcast()
 
     for i, c in enumerate(clients):
-        print(i, c.get_all_state())
+        pass#print(i, c.get_all_state())
 
+    print(c0.chain.holdings())

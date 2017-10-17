@@ -5,11 +5,26 @@ from .serialization import fmt_h
 COINBASE_CONSTANT = ("__COINBASE__", 0)
 COINBASE_AMT = 10.0
 
-def tx_input(tx_out_hash, tx_index, tx_out_index):
-    return (tx_out_hash, tx_index, tx_out_index)
-
 def tx_output(out_addr, amt):
     return (tuple(out_addr), amt)
+
+class TxInput:
+    def __init__(self, block_hash, tx_index, tx_out_index):
+        self.block_hash = block_hash
+        self.tx_index = tx_index
+        self.tx_out_index = tx_out_index
+
+    def as_json(self):
+        return {
+            "block_hash": self.block_hash,
+            "tx_index": self.tx_index,
+            "tx_out_index": self.tx_out_index
+        }
+
+    @classmethod
+    def from_json(cls, data):
+        return cls(**data)
+
 
 class Tx:
     def __init__(self, from_addr, signature, inputs, outputs):
@@ -47,7 +62,7 @@ class Tx:
     @classmethod
     def from_json(cls, data):
         data["from_addr"] = tuple(data["from_addr"])
-        data["inputs"] = [tx_input(*i) for i in data["inputs"]]
+        data["inputs"] = [TxInput.from_json(i) for i in data["inputs"]]
         data["outputs"] = [tx_output(*o) for o in data["outputs"]]
         return cls(**data)
     

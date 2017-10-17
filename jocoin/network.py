@@ -15,7 +15,6 @@ class Connection:
     def read(self):
         if self.status == Network.SWAP:
             state = self.state.get_all_state()
-            print("SENDING", state, deserialize(serialize(state)))
             return deserialize(serialize(state))
     
 
@@ -30,6 +29,5 @@ class Network:
 
     def swap_history(self, peer_id, history):
         connection = self.connect(peer_id)
-        print("SWAPPING", deserialize(serialize(history)))
         connection.send(self.SWAP, deserialize(serialize(history)))
         return connection.read()
