@@ -6,6 +6,7 @@ from .hashing import hash_
 
 class Client:
     def __init__(self, pubkey, privkey, network, peers):
+        self.address = network.register(self)
         self.pubkey = pubkey
         self.privkey = privkey
         self.network = network
@@ -46,6 +47,7 @@ class Client:
     def gossip(self):
         peer = self.random_peer()
         if peer is not None:
+            print("Sending {} my state: {}".format(peer, self.get_all_state()))
             return self.gossip_with_peer(peer, self.get_all_state())
 
     def gossip_with_peer(self, peer, history):
@@ -53,6 +55,7 @@ class Client:
         self.handle_peer_data(other)
 
     def handle_peer_data(self, data):
+        print("Received this data during gossip: {}".format(data))
         if data:
             self.merge_history(data)
 
@@ -63,7 +66,7 @@ class Client:
         self.merge_txs([Tx.from_json(tx) for tx in other["txs"]])
 
     def merge_peers(self, other_peers):
-        self.peers = list(set().union(self.peers, other_peers))
+        self.peers = list(set().union(self.peers, other_peers) - set([self.address]))
 
     def merge_txs(self, other_txs):
         # Merge transaction lists
@@ -84,7 +87,7 @@ class Client:
 
     def get_all_state(self):
         return {
-            "peers": self.peers,
+            "peers": [self.address] + self.peers,
             "txs": [tx.as_json() for tx in self.current_txs],
             "chain": self.chain.as_json()
         }
@@ -129,7 +132,7 @@ class Client:
 
     def make_tx_for(self, privkey, pubkey, outputs):
         all_inputs = self.chain.valid_inputs_for(pubkey)
-        out_total = sum(x[1] for x in outputs)
+        out_total = sum(x.amount for x in outputs)
         in_available = sum(x[1] for x in all_inputs)
         if out_total > in_available:
             raise InvalidTransactionException("Requested amount is larger than available funds")

@@ -1,14 +1,28 @@
 from .signature import create_signature, is_valid_signature
 from .hashing import hash_
 from .serialization import fmt_h
+from .util import ValueComparable
 
 COINBASE_CONSTANT = ("__COINBASE__", 0)
 COINBASE_AMT = 10.0
 
-def tx_output(out_addr, amt):
-    return (tuple(out_addr), amt)
+class TxOutput(ValueComparable):
+    def __init__(self, out_addr, amount):
+        self.out_addr = out_addr
+        self.amount = amount
 
-class TxInput:
+    def as_json(self):
+        return self.__dict__
+
+    @classmethod
+    def from_json(cls, data):
+        data["out_addr"] = tuple(data["out_addr"])
+        return cls(**data)
+
+    def __repr__(self):
+        return "TxOutput<{}>".format(str(self.as_json()))
+
+class TxInput(ValueComparable):
     def __init__(self, block_hash, tx_index, tx_out_index):
         self.block_hash = block_hash
         self.tx_index = tx_index
@@ -24,6 +38,9 @@ class TxInput:
     @classmethod
     def from_json(cls, data):
         return cls(**data)
+
+    def __repr__(self):
+        return "TxInput<{}>".format(str(self.as_json()))
 
 
 class Tx:
@@ -46,10 +63,10 @@ class Tx:
 
     @classmethod
     def coinbase(cls, out_addr):
-        return cls(COINBASE_CONSTANT, None, [], [tx_output(out_addr, COINBASE_AMT)])
+        return cls(COINBASE_CONSTANT, None, [], [TxOutput(out_addr, COINBASE_AMT)])
     
     def amt_out(self):
-        return sum(x[1] for x in self.outputs)
+        return sum(x.amount for x in self.outputs)
     
     def as_json(self):
         return {
@@ -63,15 +80,12 @@ class Tx:
     def from_json(cls, data):
         data["from_addr"] = tuple(data["from_addr"])
         data["inputs"] = [TxInput.from_json(i) for i in data["inputs"]]
-        data["outputs"] = [tx_output(*o) for o in data["outputs"]]
+        data["outputs"] = [TxOutput(*o) for o in data["outputs"]]
         return cls(**data)
     
     def is_coinbase(self):
         return self.from_addr == COINBASE_CONSTANT
     
-    def total_output(self):
-        return sum(x[1] for x in self.outputs)
-
     def validate(self):
         if not is_valid_signature((self.inputs, self.outputs), self.signature, self.from_addr):
             raise InvalidTransactionException("Invalid signature")

@@ -21,8 +21,9 @@ class Connection:
 class Network:
     SWAP = "YO!"
 
-    def __init__(self, peer_list):
-        self.peer_list = peer_list
+    def __init__(self):
+        self.index = 0
+        self.peer_list = []
 
     def connect(self, peer_id):
         return Connection(self.peer_list[peer_id])
@@ -31,3 +32,9 @@ class Network:
         connection = self.connect(peer_id)
         connection.send(self.SWAP, deserialize(serialize(history)))
         return connection.read()
+
+    def register(self, client):
+        self.peer_list.append(client)
+        client_index = self.index
+        self.index += 1
+        return client_index
