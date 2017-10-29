@@ -79,7 +79,7 @@ class BlockChain:
 
     def valid_inputs_for(self, pubkey):
         valid_inputs = self.find_inputs()
-        print(valid_inputs)
+        #print(valid_inputs)
         return [(i, self.output_size(i)) for i in valid_inputs[pubkey]]
                 
     def last_block(self):

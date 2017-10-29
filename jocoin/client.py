@@ -1,5 +1,6 @@
 import random
-from .chain import DIFFICULTY, BlockChain, BlockStruct, InvalidTransactionException, Tx
+from .chain import DIFFICULTY, BlockChain, BlockStruct, InvalidTransactionException
+from .tx import Tx, TxOutput
 from .serialization import serialize
 from .hashing import hash_
 
@@ -47,7 +48,7 @@ class Client:
     def gossip(self):
         peer = self.random_peer()
         if peer is not None:
-            print("Sending {} my state: {}".format(peer, self.get_all_state()))
+            #print("Sending {} my state: {}".format(peer, self.get_all_state()))
             return self.gossip_with_peer(peer, self.get_all_state())
 
     def gossip_with_peer(self, peer, history):
@@ -55,7 +56,7 @@ class Client:
         self.handle_peer_data(other)
 
     def handle_peer_data(self, data):
-        print("Received this data during gossip: {}".format(data))
+        #print("Received this data during gossip: {}".format(data))
         if data:
             self.merge_history(data)
 
@@ -144,4 +145,6 @@ class Client:
                 sum_total += amt
             else:
                 break
+        if sum_total > out_total:
+            outputs.append(TxOutput(pubkey, sum_total - out_total))
         return Tx.build_with_signature(pubkey, privkey, inputs, outputs)

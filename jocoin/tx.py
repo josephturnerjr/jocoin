@@ -80,7 +80,7 @@ class Tx:
     def from_json(cls, data):
         data["from_addr"] = tuple(data["from_addr"])
         data["inputs"] = [TxInput.from_json(i) for i in data["inputs"]]
-        data["outputs"] = [TxOutput(*o) for o in data["outputs"]]
+        data["outputs"] = [TxOutput.from_json(o) for o in data["outputs"]]
         return cls(**data)
     
     def is_coinbase(self):
