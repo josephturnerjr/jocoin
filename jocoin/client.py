@@ -3,6 +3,7 @@ from .chain import DIFFICULTY, BlockChain, BlockStruct, InvalidTransactionExcept
 from .tx import Tx, TxOutput
 from .serialization import serialize
 from .hashing import hash_
+from .signature import create_signature
 
 
 class Client:
@@ -131,20 +132,5 @@ class Client:
     def add_block(self, blk):
         return self.chain.add_block(blk)
 
-    def make_tx_for(self, privkey, pubkey, outputs):
-        all_inputs = self.chain.valid_inputs_for(pubkey)
-        out_total = sum(x.amount for x in outputs)
-        in_available = sum(x[1] for x in all_inputs)
-        if out_total > in_available:
-            raise InvalidTransactionException("Requested amount is larger than available funds")
-        sum_total = 0.0
-        inputs = []
-        for i, amt in all_inputs:
-            if sum_total < out_total:
-                inputs.append(i)
-                sum_total += amt
-            else:
-                break
-        if sum_total > out_total:
-            outputs.append(TxOutput(pubkey, sum_total - out_total))
-        return Tx.build_with_signature(pubkey, privkey, inputs, outputs)
+    def get_inputs_for(self, pubkey):
+        return self.chain.valid_inputs_for(pubkey)

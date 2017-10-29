@@ -61,6 +61,7 @@ class BlockChain:
         for block in self.block_iter():
             block_hash = hash_(block)
             for tx_index, tx in enumerate(block.txs):
+                # TODO consider TX fees here
                 # An output is a valid input unless it's been consumed by another transaction
                 for output_index, outp in enumerate(tx.outputs):
                     output_id = (block_hash, tx_index, output_index)

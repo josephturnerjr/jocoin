@@ -3,6 +3,7 @@ from jocoin.client import Client
 from jocoin.tx import TxOutput
 import pprint
 import jocoin.crypto as jc
+from jocoin.user import make_tx_with_fee
 
 
 def create_client(network, peers):
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     #for i, c in enumerate(n.peer_list):
     #    print(i, pprint.pformat(c.get_all_state()))
 
-    tx = c0.make_tx_for(c1.privkey, c1.pubkey, [TxOutput(c0.pubkey, 1.0)])
+    tx = make_tx_with_fee(c0.get_inputs_for(c1.pubkey), c1.privkey, c1.pubkey, [TxOutput(c0.pubkey, 1.0)], 0.1)
     print("c0", pprint.pformat(c0.chain.holdings()))
     print("c1", pprint.pformat(c1.chain.holdings()))
     print("c2", pprint.pformat(c2.chain.holdings()))

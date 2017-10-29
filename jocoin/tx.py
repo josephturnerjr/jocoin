@@ -1,4 +1,4 @@
-from .signature import create_signature, is_valid_signature
+from .signature import is_valid_signature
 from .hashing import hash_
 from .serialization import fmt_h
 from .util import ValueComparable
@@ -55,11 +55,6 @@ class Tx:
 
     def __eq__(self, other):
         return self.from_addr == other.from_addr and self.signature == other.signature and self.inputs == other.inputs and self.outputs == other.outputs
-
-    @classmethod
-    def build_with_signature(cls, pubkey, privkey, inputs, outputs):
-        sig = create_signature((inputs, outputs), privkey)
-        return Tx(pubkey, sig, inputs, outputs)
 
     @classmethod
     def coinbase(cls, out_addr):
