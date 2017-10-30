@@ -26,6 +26,12 @@ class BlockStruct:
     @classmethod
     def genesis(cls):
         return cls(1, None, [], None)
+
+    def coinbase(self):
+        return [tx for tx in self.txs if tx.is_coinbase()][0]
+
+    def miner(self):
+        return self.coinbase().outputs[0].out_addr
     
     def __repr__(self):
         return "Block<{}>[{}]".format(fmt_h(hash_(self)), self.txs)

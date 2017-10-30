@@ -48,21 +48,30 @@ if __name__ == "__main__":
     print("c2", pprint.pformat(c2.chain.holdings()))
     
     c1.gossip()
+    c1.gossip()
+    c1.gossip()
+    c0.gossip()
+    c0.gossip()
+    c0.gossip()
+    c2.gossip()
+    c2.gossip()
+    c2.gossip()
 
     print("After gossip")
     #for i, c in enumerate(n.peer_list):
     #    print(i, pprint.pformat(c.get_all_state()))
 
-    b = c1.mine()
-    c1.add_block(b)
-    c1.broadcast()
+    b = c2.mine()
+    print(b)
+    c2.add_block(b)
+    c2.broadcast()
 
     print("After mining")
     print("c0", pprint.pformat(c0.chain.holdings()))
-    print("c0", pprint.pformat(c0.chain.find_inputs()))
+    #print("c0", pprint.pformat(c0.chain.find_inputs()))
     print("c1", pprint.pformat(c1.chain.holdings()))
-    print("c0", pprint.pformat(c1.chain.find_inputs()))
+    #print("c0", pprint.pformat(c1.chain.find_inputs()))
     print("c2", pprint.pformat(c2.chain.holdings()))
-    print("c0", pprint.pformat(c2.chain.find_inputs()))
-    for i, c in enumerate(n.peer_list):
-        print(i, pprint.pformat(c.get_all_state()))
+    #print("c0", pprint.pformat(c2.chain.find_inputs()))
+    #for i, c in enumerate(n.peer_list):
+    #    print(i, pprint.pformat(c.get_all_state()))

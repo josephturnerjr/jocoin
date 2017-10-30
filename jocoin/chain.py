@@ -10,6 +10,7 @@ class InvalidBlockException(Exception):
     pass
 
 class BlockChain:
+    FEE_INDEX = -1
     def __init__(self, current_hash, blocks):
         ordered = list(self.block_iter_(current_hash, blocks))
         ordered.reverse()
@@ -54,6 +55,9 @@ class BlockChain:
             b = blocks[h]
             yield b
             h = b.last_hash
+
+    def amt_in(self, tx):
+        return sum(self.output_size(inp) for inp in tx.inputs)
         
     def find_inputs(self):
         valid_inputs = defaultdict(list)
@@ -61,17 +65,25 @@ class BlockChain:
         for block in self.block_iter():
             block_hash = hash_(block)
             for tx_index, tx in enumerate(block.txs):
-                # TODO consider TX fees here
                 # An output is a valid input unless it's been consumed by another transaction
                 for output_index, outp in enumerate(tx.outputs):
                     output_id = (block_hash, tx_index, output_index)
                     if output_id not in inputs:
                         valid_inputs[outp.out_addr].append(output_id)
+                # Transaction fees
+                # TODO: better way?
+                output_id = (block_hash, tx_index, self.FEE_INDEX)
+                amt_in = self.amt_in(tx)
+                if output_id not in inputs and self.amt_in(tx) > tx.amt_out():
+                    valid_inputs[block.miner()].append(output_id)
                 for inp in tx.inputs:
                     inputs.add((inp.block_hash, inp.tx_index, inp.tx_out_index))
         return {x: [TxInput(*i) for i in valid_inputs[x]] for x in valid_inputs}
     
     def output_size(self, tx):
+        if tx.tx_out_index == self.FEE_INDEX:
+            tx_output = self.blocks[tx.block_hash].txs[tx.tx_index]
+            return self.amt_in(tx_output) - tx_output.amt_out()
         return self.blocks[tx.block_hash].txs[tx.tx_index].outputs[tx.tx_out_index].amount
     
     def holdings(self):
