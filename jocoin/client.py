@@ -1,9 +1,11 @@
 import random
+from threading import Thread
 from .chain import DIFFICULTY, BlockChain, BlockStruct, InvalidTransactionException
 from .tx import Tx, TxOutput
 from .serialization import serialize
 from .hashing import hash_
 from .signature import create_signature
+from .jocoinlistener import JoCoinListener
 
 
 class Client:
@@ -13,13 +15,29 @@ class Client:
         self.privkey = privkey
         self.network = network
         self.current_txs = []
+        self.chain = None
         if peers:
             self.peers = peers
-            self.chain = None
-            self.get_initial_state()
         else:
             self.peers = []
+
+    def start(self):
+        # Initialize state
+        if self.peers:
+            self.get_initial_state()
+        else:
             self.chain = BlockChain.empty()
+        # Start listening thread
+        listener = JoCoinListener(self)
+        self.listen_process = Thread(target=listener.start)
+        self.listen_process.start()
+        # Start mining
+        while True:
+            block = self.mine()
+            print("New block: {}".format(block))
+            self.add_block(block)
+            print("Chain length: {}".format(self.chain.length()))
+        
         
     def random_peer(self):
         if self.peers:
@@ -106,10 +124,7 @@ class Client:
     
     def emit_txs(self):
         # Export transaction candidates with coinbase for block mining
-        self.add_tx(Tx.coinbase(self.pubkey))
-        txs = self.current_txs
-        self.current_txs = []
-        return txs
+        return self.current_txs[:] + [Tx.coinbase(self.pubkey)]
         
     def mine(self):
         # Find a valid block based on candidates
