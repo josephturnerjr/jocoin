@@ -5,15 +5,14 @@ from .tx import Tx, TxOutput
 from .serialization import serialize
 from .hashing import hash_
 from .signature import create_signature
-from .jocoinlistener import JoCoinListener
+from .jocoinnetwork import JoCoinListener, gossip_with
 
 
 class Client:
-    def __init__(self, pubkey, privkey, network, peers):
-        self.address = network.register(self)
+    def __init__(self, pubkey, privkey, peers, listen_addr):
+        self.address = listen_addr
         self.pubkey = pubkey
         self.privkey = privkey
-        self.network = network
         self.current_txs = []
         self.chain = None
         if peers:
@@ -28,7 +27,7 @@ class Client:
         else:
             self.chain = BlockChain.empty()
         # Start listening thread
-        listener = JoCoinListener(self)
+        listener = JoCoinListener(self, self.address)
         self.listen_process = Thread(target=listener.start)
         self.listen_process.start()
         # Start mining
@@ -36,6 +35,7 @@ class Client:
             block = self.mine()
             print("New block: {}".format(block))
             self.add_block(block)
+            self.broadcast()
             print("Chain length: {}".format(self.chain.length()))
         
         
@@ -47,7 +47,7 @@ class Client:
         while True:
             try:
                 peer = self.random_peer()
-                other = self.network.swap_history(peer, None)
+                other = gossip_with(peer, None)
                 if other:
                     self.merge_history(other)
                     break
@@ -71,7 +71,7 @@ class Client:
             return self.gossip_with_peer(peer, self.get_all_state())
 
     def gossip_with_peer(self, peer, history):
-        other = self.network.swap_history(peer, history)
+        other = gossip_with(peer, history)
         self.handle_peer_data(other)
 
     def handle_peer_data(self, data):
@@ -86,7 +86,7 @@ class Client:
         self.merge_txs([Tx.from_json(tx) for tx in other["txs"]])
 
     def merge_peers(self, other_peers):
-        self.peers = list(set().union(self.peers, other_peers) - set([self.address]))
+        self.peers = list(set().union(self.peers, map(tuple, other_peers)) - set([self.address]))
 
     def merge_txs(self, other_txs):
         # Merge transaction lists

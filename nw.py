@@ -1,3 +1,4 @@
+import sys
 from jocoin.network import Network
 from jocoin.client import Client
 from jocoin.tx import TxOutput
@@ -6,15 +7,17 @@ import jocoin.crypto as jc
 from jocoin.user import make_tx_with_fee
 
 
-def create_client(network, peers):
-    keys = jc.gen_keys()
-    return Client(keys["pubkey"], keys["privkey"], network, peers)
 
 
 if __name__ == "__main__":
-    n = Network()
-    c0 = create_client(n, [])
-    c0.start()
+    listen_addr = (sys.argv[1], int(sys.argv[2]))
+    if len(sys.argv) >= 5:
+        peers = [(sys.argv[3], int(sys.argv[4]))]
+    else:
+        peers = []
+    keys = jc.gen_keys()
+    c = Client(keys["pubkey"], keys["privkey"], peers, listen_addr)
+    c.start()
 #    c1 = create_client(n, [0])
 #
 #    b = c1.mine()
