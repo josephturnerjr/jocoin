@@ -5,7 +5,7 @@ from .tx import Tx, TxOutput
 from .serialization import serialize
 from .hashing import hash_
 from .signature import create_signature
-from .jocoinnetwork import JoCoinListener, gossip_with
+from .network import JoCoinListener, gossip_with
 
 
 class Client:
@@ -30,13 +30,15 @@ class Client:
         listener = JoCoinListener(self, self.address)
         self.listen_process = Thread(target=listener.start)
         self.listen_process.start()
+        # Start gossiping
+        # TODO
         # Start mining
         while True:
             block = self.mine()
             print("New block: {}".format(block))
             self.add_block(block)
             self.broadcast()
-            print("Chain length: {}".format(self.chain.length()))
+            print("Chain length: {}, last hash: {}, holdings: {}".format(self.chain.length(), self.chain.current_hash, self.chain.holdings()))
         
         
     def random_peer(self):
@@ -67,12 +69,14 @@ class Client:
     def gossip(self):
         peer = self.random_peer()
         if peer is not None:
-            #print("Sending {} my state: {}".format(peer, self.get_all_state()))
             return self.gossip_with_peer(peer, self.get_all_state())
 
     def gossip_with_peer(self, peer, history):
-        other = gossip_with(peer, history)
-        self.handle_peer_data(other)
+        try:
+            other = gossip_with(peer, history)
+            self.handle_peer_data(other)
+        except Exception as e:
+            print("Error gossiping with peer {}: {}").format(peer, e)
 
     def handle_peer_data(self, data):
         #print("Received this data during gossip: {}".format(data))

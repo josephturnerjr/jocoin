@@ -4,7 +4,7 @@ from .serialization import fmt_h
 from .tx import Tx, TxInput, InvalidTransactionException, COINBASE_AMT
 from .blockstruct import BlockStruct
 
-DIFFICULTY = 1 << 238
+DIFFICULTY = 1 << 237
 
 class InvalidBlockException(Exception):
     pass

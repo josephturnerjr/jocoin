@@ -1,40 +1,48 @@
+import socket
+import socketserver
 from .serialization import serialize, deserialize
 
+def format_obj_for_transmission(o):
+    return format_string_for_transmission(serialize(o))
 
-class Connection:
-    def __init__(self, state):
-        self.state = state
+def format_string_for_transmission(s):
+    return bytes(s + "\n", "utf-8")
 
-    def send(self, msg, data):
-        if msg == Network.SWAP:
-            self.status = Network.SWAP
-            self.state.handle_peer_data(data)
-        else:
-            raise ConnectionError("Unknown message type: {}").format(msg)
+def gossip_with(peer, raw_data):
+    serialized = serialize(raw_data)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect(peer)
+        sock.sendall(format_string_for_transmission(serialized))
+        serialized_received = readline(sock)
+    finally:
+        sock.close()
 
-    def read(self):
-        if self.status == Network.SWAP:
-            state = self.state.get_all_state()
-            return deserialize(serialize(state))
-    
+    received = deserialize(serialized_received)
+    return received
 
-class Network:
-    SWAP = "YO!"
+def readline(sock, bufsize=4096):
+    buf = ''
+    data = True
+    while data:
+        data = str(sock.recv(bufsize), "utf-8")
+        buf += data
+        if '\n' in buf:
+            return buf.splitlines()[0]
 
-    def __init__(self):
-        self.index = 0
-        self.peer_list = []
+class JoCoinServer(socketserver.StreamRequestHandler):
+    def handle(self):
+        data = self.rfile.readline().strip()
+        serialized = serialize(self.server.client.get_all_state())
+        self.wfile.write(format_string_for_transmission(serialized))
+        self.server.client.handle_peer_data(deserialize(data))
 
-    def connect(self, peer_id):
-        return Connection(self.peer_list[peer_id])
 
-    def swap_history(self, peer_id, history):
-        connection = self.connect(peer_id)
-        connection.send(self.SWAP, deserialize(serialize(history)))
-        return connection.read()
+class JoCoinListener():
+    def __init__(self, client, listen_addr):
+        self.server = socketserver.TCPServer(listen_addr, JoCoinServer)
+        self.server.client = client
 
-    def register(self, client):
-        self.peer_list.append(client)
-        client_index = self.index
-        self.index += 1
-        return client_index
+    def start(self):
+        print("Starting JoCoin server")
+        self.server.serve_forever()

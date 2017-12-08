@@ -1,22 +1,26 @@
 import sys
-from jocoin.network import Network
+import json
 from jocoin.client import Client
 from jocoin.tx import TxOutput
-import pprint
-import jocoin.crypto as jc
 from jocoin.user import make_tx_with_fee
 
 
 
+def read_keyfile(fn):
+    with open(fn) as f:
+        return json.loads(f.read())
+
 
 if __name__ == "__main__":
-    listen_addr = (sys.argv[1], int(sys.argv[2]))
+    keyfile, listen_addr, listen_port = sys.argv[1:4]
+    listen_addr = (listen_addr, int(listen_port))
     if len(sys.argv) >= 5:
-        peers = [(sys.argv[3], int(sys.argv[4]))]
+        peer_addr, peer_port = sys.argv[4:6]
+        peers = [(peer_addr, int(peer_port))]
     else:
         peers = []
-    keys = jc.gen_keys()
-    c = Client(keys["pubkey"], keys["privkey"], peers, listen_addr)
+    keys = read_keyfile(keyfile)
+    c = Client(tuple(keys["pubkey"]), tuple(keys["privkey"]), peers, listen_addr)
     c.start()
 #    c1 = create_client(n, [0])
 #
