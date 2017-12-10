@@ -2,6 +2,7 @@ import optparse
 import json
 import sys
 import jocoin.network as jnw
+import jocoin.crypto as jcc
 from jocoin.tx import TxInput, TxOutput
 from jocoin.user import make_tx
 
@@ -14,6 +15,7 @@ if __name__ == "__main__":
     usage = """usage: %prog [options] <command> [<args>]
 
 Available commands:
+    genkeys: Generate public/private keys and output to stdout
     balance <keyfile>: Get the balance for the account linked to the key in <keyfile>
     inputs <keyfile>: Get the available inputs for the account linked to the key in <keyfile>
     transfer <your keyfile> <to_keyfile> <amount>: Transfer <amount> from your account to <to_keyfile>'s account"""
@@ -24,8 +26,6 @@ Available commands:
 
     (options, args) = parser.parse_args()
 
-    print(args)
-
     if not args:
         parser.print_help()
         sys.exit()
@@ -33,13 +33,15 @@ Available commands:
     command = args[0]
     server_addr = (options.server_addr, options.server_port)
 
-    if command == "balance":
+    if command == "genkeys":
+        print(json.dumps(jcc.gen_keys()))
+    elif command == "balance":
         if len(args) != 2:
             parser.print_help()
             sys.exit()
         key = read_keyfile(args[1])
         print(jnw.request_balance(server_addr, key['pubkey']))
-    if command == "inputs":
+    elif command == "inputs":
         if len(args) != 2:
             parser.print_help()
             sys.exit()
