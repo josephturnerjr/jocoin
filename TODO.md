@@ -2,9 +2,7 @@
 
 **Or rather, what's undone**
 
-  * Client
-    * Check balance for given pubkey
-    * Add transaction
+  * Prune peer list on connection failure
   * Active gossip (interruption of mining, locking the chain, etc.)
   * Better CLI for seeding peer list
   * Wrap keys in class for pretty printing etc.

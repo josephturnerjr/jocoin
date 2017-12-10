@@ -50,7 +50,7 @@ class Client:
         
 
     def holdings_for(self, pubkey):
-        return self.chain.holdings()[pubkey]
+        return self.chain.holdings().get(pubkey, 0.0)
         
     def random_peer(self):
         if self.peers:
@@ -164,5 +164,5 @@ class Client:
     def add_block(self, blk):
         return self.chain.add_block(blk)
 
-    def get_inputs_for(self, pubkey):
+    def inputs_for(self, pubkey):
         return self.chain.valid_inputs_for(pubkey)

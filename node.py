@@ -1,8 +1,8 @@
 import sys
 import json
+from optparse import OptionParser
 from jocoin.client import Client
 from jocoin.crypto import gen_keys
-from optparse import OptionParser
 
 def read_keyfile(fn):
     with open(fn) as f:
@@ -17,8 +17,6 @@ if __name__ == "__main__":
     parser.add_option("-p", "--port", help="server port", type="int", dest="server_port", default=9999)
 
     (options, args) = parser.parse_args()
-
-    print(options, args)
 
     if options.keyfile:
         keys = read_keyfile(options.keyfile)
