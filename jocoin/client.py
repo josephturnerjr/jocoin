@@ -1,4 +1,6 @@
 import random
+import time
+import traceback
 from threading import Thread
 from .chain import DIFFICULTY, BlockChain, BlockStruct, InvalidTransactionException
 from .tx import Tx, TxOutput
@@ -38,8 +40,17 @@ class Client:
             print("New block: {}".format(block))
             self.add_block(block)
             self.broadcast()
-            print("Chain length: {}, last hash: {}, holdings: {}".format(self.chain.length(), self.chain.current_hash, self.chain.holdings()))
+            print("After broadcast:")
+            print("\tChain length: {}".format(self.chain.length()))
+            print("\tLast hash: {}...".format(str(self.chain.current_hash)[:6]))
+            holdings = self.chain.holdings()
+            print("\tHoldings:")
+            for (pk, e) in holdings:
+                print("\t\t{}...: {}".format(str(pk)[:6], holdings[(pk, e)]))
         
+
+    def holdings_for(self, pubkey):
+        return self.chain.holdings()[pubkey]
         
     def random_peer(self):
         if self.peers:
@@ -56,9 +67,11 @@ class Client:
                 else:
                     continue
             except ConnectionError as e:
-                print("Error connecting to peer {}: {}").format(peer, e)
+                print("Error connecting to peer {}: {}".format(peer, e))
+                traceback.print_exc()
             except Exception as e:
-                print("Error merging peer history for peer {}: {}").format(peer, e)
+                print("Error merging peer history for peer {}: {}".format(peer, e))
+                traceback.print_exc()
             time.sleep(1)
 
     def broadcast(self):
@@ -76,7 +89,7 @@ class Client:
             other = gossip_with(peer, history)
             self.handle_peer_data(other)
         except Exception as e:
-            print("Error gossiping with peer {}: {}").format(peer, e)
+            print("Error gossiping with peer {}: {}".format(peer, e))
 
     def handle_peer_data(self, data):
         #print("Received this data during gossip: {}".format(data))
