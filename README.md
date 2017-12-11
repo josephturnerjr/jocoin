@@ -36,3 +36,11 @@ from scratch.
 
 Run the `client.py` script with the `-h` argument for more information on
 possible actions the client can take.
+
+## Things that aren't so great
+
+See the TODO file for things left undone. Most notably, this makes no
+effort to be efficient, as i was primarily interested in learning about
+how BTC protects the integrity of the blockchain. I also kind of punted
+a little bit on making the networking and threading aspects bulletproof
+because, again, that wasn't the part I was interested in. 

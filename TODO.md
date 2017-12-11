@@ -3,7 +3,6 @@
 **Or rather, what's undone**
 
   * Prune peer list on connection failure
-  * Active gossip (interruption of mining, locking the chain, etc.)
   * Better CLI for seeding peer list
   * Wrap keys in class for pretty printing etc.
   * Merkle tree of transactions
