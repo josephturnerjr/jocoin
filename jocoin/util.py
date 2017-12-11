@@ -1,3 +1,6 @@
+import threading
+
+
 class ValueComparable:
     def __eq__(self, other):
         if isinstance(other, self.__class__):

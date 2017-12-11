@@ -58,36 +58,20 @@ def readline(sock, bufsize=4096):
         if '\n' in buf:
             return buf.splitlines()[0]
 
-def data_from_request(req_line):
-    return deserialize(req_line.strip())
 
 class JoCoinServer(socketserver.StreamRequestHandler):
     def handle(self):
         message = self.get_message()
-        if message == GOSSIP:
-            peer_data = self.get_message_data()
-            self.wfile.write(format_object_for_transmission(self.server.client.get_all_state()))
-            self.server.client.handle_peer_data(peer_data)
-        elif message == BALANCE:
-            pubkey = tuple(self.get_message_data())
-            self.wfile.write(format_object_for_transmission(self.server.client.holdings_for(pubkey)))
-        elif message == INPUTS:
-            pubkey = tuple(self.get_message_data())
-            self.wfile.write(format_object_for_transmission(self.server.client.inputs_for(pubkey)))
-        elif message == TRANSFER:
-            tx = Tx.from_json(data_from_request(self.rfile.readline()))
-            if self.server.client.add_tx(tx):
-                self.wfile.write(format_object_for_transmission("SUCCESS"))
-            else:
-                self.wfile.write(format_object_for_transmission("FAILURE"))
-        else:
-            print("Unknown message type: {}".format(message))
+        data = self.get_message_data()
+        response = self.server.client.dispatch_incoming_message(message, data)
+        self.wfile.write(format_object_for_transmission(response))
 
     def get_message(self):
         return str(self.rfile.readline().strip(), "utf-8")
 
     def get_message_data(self):
-        return data_from_request(self.rfile.readline())
+        req_line = self.rfile.readline()
+        return deserialize(req_line.strip())
 
 
 class JoCoinListener():
