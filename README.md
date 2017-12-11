@@ -10,7 +10,9 @@ from scratch.
 
   1. Checkout the code.
   2. Generate yourself a key:
+
         python client.py genkeys > my.key
+
   3. Start a node locally:
 
         python node.py -k my.key
