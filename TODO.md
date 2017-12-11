@@ -7,3 +7,5 @@
   * Wrap keys in class for pretty printing etc.
   * Merkle tree of transactions
   * Efficient gossip (don't transmit entire history)
+  * Better / different crypto
+  * BTC-like stack language
