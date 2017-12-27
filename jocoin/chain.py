@@ -4,7 +4,7 @@ from .serialization import fmt_h
 from .tx import Tx, TxInput, InvalidTransactionException, COINBASE_AMT
 from .blockstruct import BlockStruct
 
-DIFFICULTY = 1 << 245
+DIFFICULTY = 1 << 235
 
 class InvalidBlockException(Exception):
     pass
@@ -92,8 +92,7 @@ class BlockChain:
 
     def valid_inputs_for(self, pubkey):
         valid_inputs = self.find_inputs()
-        #print(valid_inputs)
-        return [(i, self.output_size(i)) for i in valid_inputs[pubkey]]
+        return [(i, self.output_size(i)) for i in valid_inputs.get(pubkey, [])]
                 
     def last_block(self):
         return self.blocks[self.current_hash]
